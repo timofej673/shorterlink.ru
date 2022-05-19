@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Сокращатель ссылок</title>
+	<style type="text/css">
+		@font-face {
+		  font-family: Lato;
+		  src: url('Roboto-Italic.ttf') format('ttf'),
+		}
+		body{
+			margin: 0;
+		}
+		div#centered{
+			display: table-cell;
+			vertical-align: middle;
+			height: 100vh;
+			width: 100vw;
+			text-align: center;
+		}
+		header{
+			text-align: center;
+			font-family: 'Roboto', sans-serif;
+			font-size: 3em;
+		}
+		input#link{
+			height: 16px;
+    		width: 450px;
+			margin: 5px;
+		}
+		button#button{
+			margin: 5px;
+		}
+		.hidden{
+			opacity: 0;
+		}
+		.transitable{
+			transition: opacity 0.3s;
+		}
+
+	</style>
+</head>
+<body>
+	<div id="centered">
+		<header>Сокращатель ссылок</header>
+		<form action="javascript:void(0)" id='form' class="transitable">
+			{% csrf_token %}
+			<input placeholder="Исходная ссылка" name="link" id='link' required maxlength="200">
+			<br>
+			<input type='button' id='additional' value="Дополнительные настройки">
+			<input type='submit' id='submit_form' value="Сгенерировать ссылку"> 
+			<div hidden id='additional_hidden'>
+				<input type='checkbox' id="create_pers_link"> Создать персональную ссылку
+				<br>
+				https://shortlink.ru/<input disabled id='personal_link' name='personal_link' required>
+			</div>
+		</form>
+		<div id='result_info_div' hidden>
+			<input readonly id="result_info">
+			<br>
+			<br>
+			<input type="button" value="Сгенерировать новую ссылку" id='reset'>
+			<p id='error'></p>
+		</div>
+	</div>
+	<script>
+	function copy_link(){
+		result_info.select();
+		result_info.setSelectionRange(0, 99999);
+		navigator.clipboard.writeText(result_info.value);
+	}
+	result_info.onclick = copy_link;
+	reset.onclick = function(){hidden_start_end(); show_result_hide_form_backwards()};
+	additional.onclick = function(){
+		additional.value = additional_hidden.hidden ? "Скрыть дополнительные настройки" : "Дополнительные настройки";
+		additional_hidden.hidden = !additional_hidden.hidden;
+	};
+	create_pers_link.onclick = function(){
+		personal_link.disabled = !personal_link.disabled;
+	};
+	form.onsubmit = generate_shortlink;
+	function hidden_start_end(){
+	form.classList.contains("hidden") ? form.classList.remove("hidden") : form.classList.add("hidden");
+	}
+	function show_result_hide_form_backwards(){
+		form.hidden = !form.hidden;
+		result_info_div.hidden = !result_info_div.hidden;
+	}
+	function generate_shortlink(){
+		let result = fetch("/generate_link",{method: "POST", body: new FormData(form)});
+		result.then(function(res){
+				console.log(res);
+				if(res.status == 400){
+				    result_info.value = "https://shorterlink.ru/" + personal_link.value;
+					error.innerText = "Уже есть такая ссылка";
+				}
+				else if(res.status != 200){
+				    result_info.value = "";
+					error.innerText = "Техническая ошибка на сервере(((";
+				}
+				else{
+					res.text().then(
+						function(res){
+							result_info.value = "https://shorterlink.ru/" + res;
+							error.innerText = "Ссылка уже скопирована в буфер!";
+							copy_link();
+						}
+					);
+				}
+		});
+		hidden_start_end();
+		form.ontransitionend = show_result_hide_form_backwards;
+	}
+	
+	</script>
+</body>
+</html>

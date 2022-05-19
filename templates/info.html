@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Сокращатель ссылок</title>
+	<style type="text/css">
+		@font-face {
+		  font-family: Lato;
+		  src: url('Roboto-Italic.ttf') format('ttf'),
+		}
+		body{
+			margin: 0;
+		}
+		div#centered{
+			display: table-cell;
+			vertical-align: middle;
+			height: 100vh;
+			width: 100vw;
+			text-align: center;
+		}
+		header{
+			text-align: center;
+			font-family: 'Roboto', sans-serif;
+			font-size: 3em;
+		}
+		input#link{
+			height: 16px;
+    		width: 200px;
+			margin: 5px;
+		}
+		button#button{
+			margin: 5px;
+		}
+		.hidden{
+			opacity: 0;
+		}
+		.transitable{
+			transition: opacity 0.3s;
+		}
+
+	</style>
+</head>
+<body>
+	<div id="centered">
+		<header>Информация о ссылке</header>
+		<form action="javascript:void(0)" id='form' class="transitable">
+			<input placeholder="id ссылки" id='link' required>
+			<br>
+			<input type='submit' id='submit_form' value="Узнать информацию"> 
+		</form>
+		<div id='result_info_div' hidden>
+			<a id="result_info"> </a>
+			<br>
+			<br>
+			<input type="button" value="Узнать информацию о другой ссылке" id='reset'>
+		</div>
+	</div>
+	<script>
+	reset.onclick = function(){hidden_start_end(); show_result_hide_form_backwards()};
+	form.onsubmit = get_info;
+	function hidden_start_end(){
+	form.classList.contains("hidden") ? form.classList.remove("hidden") : form.classList.add("hidden");
+	}
+	function show_result_hide_form_backwards(){
+		form.hidden = !form.hidden;
+		result_info_div.hidden = !result_info_div.hidden;
+	}
+	function get_info(){
+	    let link_value = null;
+	    if(link.value.startsWith("http")){
+	        link_value = link.value.split("/")[3];
+	    }
+	    else{
+	        link_value = link.value.split("/")[1];
+	    }
+		let result = fetch(`/${link_value}?info`);
+		result.then(function(res){
+				if(res.status != 200){
+					result_info.removeAttribute("href");
+					result_info.innerText = "Ссылка не найдена!!!";
+					return;
+				}
+				res.json().then(
+					function(res){
+						console.log(res)
+						result_info.removeAttribute("href");
+						result_info.innerHTML = `
+						 <a href=${link.value}> ${link.value} </a> <br> 
+						 Переводит на: <a href=${res['link']}> ${res['link']} </a> <br> 
+						 Дата создания: ${res["datetime_creation"]}
+						 <br>
+						 Всего перешли по ссылке: ${res["visited_counter"]}`;
+					}
+				);
+		});
+		hidden_start_end();
+		form.ontransitionend = show_result_hide_form_backwards;
+	}
+	
+	</script>
+</body>
+</html>
